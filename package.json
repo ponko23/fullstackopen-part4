@@ -1,0 +1,41 @@
+{
+  "name": "part4",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "watch": "nodemon index.js",
+    "deploy": "git push heroku master",
+    "lint": "eslint .",
+    "test": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ponko23/fullstackopen-part4.git"
+  },
+  "author": "ponko23",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ponko23/fullstackopen-part4/issues"
+  },
+  "homepage": "https://github.com/ponko23/fullstackopen-part4#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^8.1.0",
+    "express": "^4.17.1",
+    "lodash": "^4.17.15",
+    "mongoose": "^5.7.0",
+    "mongoose-unique-validator": "^2.0.3",
+    "morgan": "^1.9.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.3.0",
+    "eslint-plugin-node": "^10.0.0",
+    "jest": "^24.9.0",
+    "nodemon": "^1.19.2"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}
