@@ -3,17 +3,29 @@ const supertest = require('supertest')
 const helper = require('./test_helper')
 const app = require('../app')
 const api = supertest(app)
+const User = require('../models/user')
 const Blog = require('../models/blog')
 
 beforeEach(async () => {
+  await User.deleteMany({})
   await Blog.deleteMany({})
-  // for (let blog of helper.initialBlogs) {
-  //   let blogObject = new Blog(blog)
-  //   await blogObject.save()
-  // }
-  const blogObject = helper.initialBlogs.map(blog => new Blog(blog))
-  const promiseArray = blogObject.map(blog => blog.save())
-  await Promise.all(promiseArray)
+  const userObject = helper.initialUsers.map(user => new User(user))
+  const userPromiseArray = userObject.map(user => user.save())
+  await Promise.all(userPromiseArray)
+  const firstUser = await User.findOne({})
+  const blogObject = helper.initialBlogs.map(blog => {
+    const b = new Blog(blog)
+    b.user = firstUser._id
+    return b
+  })
+  const blogPromiseArray = blogObject.map(blog => blog.save())
+  await Promise.all(blogPromiseArray)
+  const users = await User.find({})
+  const blogs = await Blog.find({})
+  users.map(user => {
+    user.blgs = blogs.filter(blog => blog.user.toString() === user.id).map(blog => blog.id)
+    user.save()
+  })
 })
 
 describe('when there is initially some blogs saved', () => {
@@ -28,7 +40,6 @@ describe('when there is initially some blogs saved', () => {
     const response = await api.get('/api/blogs')
     expect(response.body.length).toBe(helper.initialBlogs.length)
   })
-
   test('a specific blog is within the returned blogs', async () => {
     const response = await api.get('/api/blogs')
     const titles = response.body.map(r => r.title)
@@ -43,21 +54,32 @@ describe('when there is initially some blogs saved', () => {
   describe('viewing a specific blog', () => {
     test('succeeds with a valid id', async () => {
       const blogsAtStart = await helper.blogsInDb()
-
       const blogToView = blogsAtStart[0]
-
+      const usersAsStart = await helper.usersInDb()
+      const userToView = usersAsStart.find((f) => f.id === blogToView.user.toString())
+      const exBlog = {
+        author: blogToView.author,
+        id: blogToView.id,
+        likes: blogToView.likes,
+        title: blogToView.title,
+        url: blogToView.url,
+        user: {
+          id: userToView.id,
+          username: userToView.username,
+          name: userToView.name
+        }
+      }
       const resultblog = await api
         .get(`/api/blogs/${blogToView.id}`)
         .expect(200)
         .expect('Content-Type', /application\/json/)
 
-      expect(resultblog.body).toEqual(blogToView)
+      expect(resultblog.body).toEqual(exBlog)
     })
 
     test('fails with statuscode 404 if blog does not exist', async () => {
       const validNonexistingId = await helper.nonExistingId()
 
-      console.log(validNonexistingId)
       await api
         .get(`/api/blogs/${validNonexistingId}`)
         .expect(404)
@@ -74,11 +96,13 @@ describe('when there is initially some blogs saved', () => {
 
   describe('addition of a new blog', () => {
     test('a valid blogs can be added', async () => {
+      const user = await helper.usersInDb()[0]
       const newBlog = {
         title: 'Why Clojure?',
         author: 'Robert C. Martin',
         url: 'http://blog.cleancoder.com/uncle-bob/2019/08/22/WhyClojure.html',
-        likes: 1
+        likes: 1,
+        user: user.id
       }
 
       await api
@@ -96,10 +120,12 @@ describe('when there is initially some blogs saved', () => {
     })
 
     test('blog without title is not added', async () => {
+      const user = await helper.usersInDb()[0]
       const newBlog = {
         author: 'Robert C. Martin',
         url: 'http://blog.cleancoder.com/uncle-bob/2019/08/22/WhyClojure.html',
-        likes: 1
+        likes: 1,
+        user: user.id
       }
 
       await api
@@ -113,10 +139,12 @@ describe('when there is initially some blogs saved', () => {
     })
 
     test('blog without url is not added', async () => {
+      const user = await helper.usersInDb()[0]
       const newBlog = {
         title: 'Why Clojure?',
         author: 'Robert C. Martin',
-        likes: 1
+        likes: 1,
+        user: user.id
       }
 
       await api
@@ -130,16 +158,18 @@ describe('when there is initially some blogs saved', () => {
     })
 
     test('likes is not specified, the default is 0', async () => {
+      const users = await helper.usersInDb()
+      const user = users[0]
       const newBlog = {
         title: 'Why won\'t it...',
         author: 'Robert C. Martin',
-        url: 'http://blog.cleancoder.com/uncle-bob/2019/07/22/WhyWontIt.html'
+        url: 'http://blog.cleancoder.com/uncle-bob/2019/07/22/WhyWontIt.html',
+        user: new User(user),
       }
 
       const response = await api
         .post('/api/blogs')
         .send(newBlog)
-
       expect(response.body.likes).toBe(0)
     })
   })

@@ -9,7 +9,7 @@ const User = require('../models/user')
 describe('when there is initially one user at db', () => {
   beforeEach(async () => {
     await User.deleteMany({})
-    const user = new User({ username: 'root', password: 'sekret' })
+    const user = new User({ username: 'root', name: 'Superuser', password: 'sekret' })
     await user.save()
   })
 
@@ -41,7 +41,7 @@ describe('when there is initially one user at db', () => {
     const newUser = {
       username: 'root',
       name: 'Superuser',
-      password: 'salainen',
+      password: 'sekret',
     }
 
     const result = await api
@@ -77,7 +77,7 @@ describe('when there is initially one user at db', () => {
     expect(usersAtEnd.length).toBe(usersAtStart.length)
   })
 
-  test('creation fails with proper statuscode and message if username is less than 3 characters', async () => {
+  test('creation fails with proper statuscode and message if password is less than 3 characters', async () => {
     const usersAtStart = await helper.usersInDb()
 
     const newUser = {
